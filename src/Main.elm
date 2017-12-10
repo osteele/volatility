@@ -122,13 +122,14 @@ priceView model =
 
 formatPrice: Maybe Float -> String
 formatPrice maybePrice =
-  case maybePrice of
-    Nothing -> "N/A"
-    Just p -> "$" ++ toString p
+  maybePrice
+  |> Maybe.map (\p -> "$" ++ toString p)
+  |> Maybe.withDefault "N/A"
 
 formatTime: Maybe Float -> String
 formatTime maybeTime =
-  case maybeTime of
-    Nothing -> ""
-    Just t ->
-      "Updated at " ++ (Date.fromTime t |> Date.Format.format "%H:%M:%S")
+  maybeTime
+  |> Maybe.map Date.fromTime
+  |> Maybe.map (Date.Format.format "%H:%M:%S")
+  |> Maybe.map ((++) "Updated at ")
+  |> Maybe.withDefault ""
