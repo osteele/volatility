@@ -35,7 +35,7 @@ type alias Model =
 init : (Model, Cmd Msg)
 init =
   ( Model 0 Nothing Nothing Material.model
-  , Cmd.batch [ rollDie, fetchPrice, updatePriceTimestamp ])
+  , Cmd.batch [ rollDie, fetchPrice ])
 
 -- messages
 
@@ -52,8 +52,8 @@ update msg model =
   case msg of
     RollDie -> (model, rollDie)
     SetDieFace face -> ({ model | dieFace = face }, Cmd.none)
-    FetchPrice -> model ! [ fetchPrice, updatePriceTimestamp ]
-    ReceivePrice (Ok price) -> ({ model | price = Just price }, Cmd.none)
+    FetchPrice -> (model, fetchPrice)
+    ReceivePrice (Ok price) -> ({ model | price = Just price }, updatePriceTimestamp)
     ReceivePrice (Err _) -> (model, Cmd.none)
     SetPriceTimestamp t -> ({ model | updateTime = Just t }, Cmd.none)
     Mdl msg_ -> Material.update Mdl msg_ model
