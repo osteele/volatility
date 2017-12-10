@@ -34,7 +34,8 @@ type alias Model =
 
 init : (Model, Cmd Msg)
 init =
-  (Model 0 Nothing Nothing Material.model, Cmd.batch [ rollDie, fetchPrice, getTime ])
+  ( Model 0 Nothing Nothing Material.model
+  , Cmd.batch [ rollDie, fetchPrice, updatePriceTimestamp ])
 
 -- messages
 
@@ -43,7 +44,7 @@ type Msg
   | FetchPrice
   | SetDieFace Int
   | ReceivePrice (Result Http.Error Float)
-  | SetUpdateTime Time
+  | SetPriceTimestamp Time
   | Mdl (Material.Msg Msg)
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -51,10 +52,10 @@ update msg model =
   case msg of
     RollDie -> (model, rollDie)
     SetDieFace face -> ({ model | dieFace = face }, Cmd.none)
-    FetchPrice -> model ! [ fetchPrice, getTime ]
+    FetchPrice -> model ! [ fetchPrice, updatePriceTimestamp ]
     ReceivePrice (Ok price) -> ({ model | price = Just price }, Cmd.none)
     ReceivePrice (Err _) -> (model, Cmd.none)
-    SetUpdateTime t -> ({ model | updateTime = Just t }, Cmd.none)
+    SetPriceTimestamp t -> ({ model | updateTime = Just t }, Cmd.none)
     Mdl msg_ -> Material.update Mdl msg_ model
 
 -- subscriptions
@@ -65,24 +66,20 @@ subscriptions model =
 
 -- commands
 
-getTime: Cmd Msg
-getTime =
-    Time.now
-        |> Task.perform SetUpdateTime
+updatePriceTimestamp: Cmd Msg
+updatePriceTimestamp =
+  Task.perform SetPriceTimestamp Time.now
 
 rollDie : Cmd Msg
 rollDie = Random.generate SetDieFace (Random.int 1 6)
 
-priceDecoder : Decoder Float
-priceDecoder =
-  (at ["USD"] (field "last" float))
-
 fetchPrice : Cmd Msg
 fetchPrice =
-    let
-      url = "https://blockchain.info/ticker"
-      request = Http.get url priceDecoder
-    in Http.send ReceivePrice request
+  let
+    url = "https://blockchain.info/ticker"
+    decoder = at ["USD"] <| field "last" float
+    request = Http.get url decoder
+  in Http.send ReceivePrice request
 
 -- views
 
@@ -127,10 +124,11 @@ formatPrice: Maybe Float -> String
 formatPrice maybePrice =
   case maybePrice of
     Nothing -> "N/A"
-    Just price -> "$" ++ toString price
+    Just p -> "$" ++ toString p
 
 formatTime: Maybe Float -> String
 formatTime maybeTime =
   case maybeTime of
     Nothing -> ""
-    Just time -> "Updated at " ++ Date.Format.format "%H:%M:%S" (Date.fromTime time)
+    Just t ->
+      "Updated at " ++ (Date.fromTime t |> Date.Format.format "%H:%M:%S")
