@@ -41,24 +41,20 @@ init =
 type Msg
   = RollDie
   | FetchPrice
-  -- | FetchError Http.Error
-  -- | FetchSuccess String
-  | NewFace Int
-  | NewPrice Float
+  | SetDieFace Int
   | ReceivePrice (Result Http.Error Float)
-  | OnTime Time
+  | SetUpdateTime Time
   | Mdl (Material.Msg Msg)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     RollDie -> (model, rollDie)
-    NewFace face -> ({ model | dieFace = face }, Cmd.none)
+    SetDieFace face -> ({ model | dieFace = face }, Cmd.none)
     FetchPrice -> model ! [ fetchPrice, getTime ]
-    NewPrice price -> ({ model | price = Just price }, Cmd.none)
     ReceivePrice (Ok price) -> ({ model | price = Just price }, Cmd.none)
     ReceivePrice (Err _) -> (model, Cmd.none)
-    OnTime t -> ({ model | updateTime = Just t }, Cmd.none)
+    SetUpdateTime t -> ({ model | updateTime = Just t }, Cmd.none)
     Mdl msg_ -> Material.update Mdl msg_ model
 
 -- subscriptions
@@ -72,10 +68,10 @@ subscriptions model =
 getTime: Cmd Msg
 getTime =
     Time.now
-        |> Task.perform OnTime
+        |> Task.perform SetUpdateTime
 
 rollDie : Cmd Msg
-rollDie = Random.generate NewFace (Random.int 1 6)
+rollDie = Random.generate SetDieFace (Random.int 1 6)
 
 priceDecoder : Decoder Float
 priceDecoder =
@@ -87,38 +83,45 @@ fetchPrice =
       url = "https://blockchain.info/ticker"
       request = Http.get url priceDecoder
     in Http.send ReceivePrice request
-    -- in Task.perform FetchError FetchSuccess request
 
 -- views
 
 view : Model -> Html Msg
 view model =
   grid []
-    [ cell [ size All 4 ] [dieView model]
-    , cell [ size All 4 ] [priceView model]
+    [ tile <| dieView model
+    , tile <| priceView model
     ]
   |> Material.Scheme.top
 
+tile : Html a -> Material.Grid.Cell a
+tile card = cell [ size All 4 ] [ card ]
+
+card: Color.Color -> String -> List (Html a) ->  Html a
+card c title content =
+  Card.view [Color.background c]
+  [ Card.title [] [ text title ]
+  , Card.text [] content
+  ]
+
+-- die view
 
 dieView : Model -> Html Msg
 dieView model =
-  Card.view [Color.background (Color.color Color.DeepOrange Color.S400)]
-  [ Card.title [] [ text "Die" ]
-  , Card.text [] [
-      div [] [text (toString model.dieFace)]
-    , div [] [button [ onClick RollDie ] [ text "Roll" ]]
-    ]
+  card (Color.color Color.DeepOrange Color.S400) "Die"
+  [ div [] [text (toString model.dieFace)]
+  , div [] [button [ onClick RollDie ] [ text "Roll" ]]
   ]
+
+-- price view
 
 priceView : Model -> Html Msg
 priceView model =
-  Card.view [Color.background (Color.color Color.DeepPurple Color.S300)]
-  [ Card.title [] [ text "Bitcoin" ]
-  , Card.text [] [
-    div [] [ text (formatPrice model.price) ]
+   card  (Color.color Color.DeepPurple Color.S300) "Bitcoin"
+  [ div [] [ text (formatPrice model.price) ]
   , div [] [ text (formatTime model.updateTime) ]
   , div [] [ button [ onClick FetchPrice ] [ text "Refresh" ] ]
-  ]]
+  ]
 
 formatPrice: Maybe Float -> String
 formatPrice maybePrice =
