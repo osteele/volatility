@@ -8,10 +8,15 @@ import Date
 import Task
 import Date.Format
 import Material
-import Material.Scheme
+import Material.Button as Button
 import Material.Card as Card
 import Material.Color as Color
+import Material.Elevation as Elevation
 import Material.Grid exposing (grid, cell, size, Device(..))
+import Material.Options as Options
+import Material.Options exposing (Style, css)
+import Material.Scheme
+import Material.Typography as Typo
 
 main: Program Never Model Msg
 main =
@@ -92,32 +97,54 @@ view model =
   |> Material.Scheme.top
 
 tile : Html a -> Material.Grid.Cell a
-tile card = cell [ size All 4 ] [ card ]
+tile card = cell (style 200) [ card ]
 
-card: Color.Color -> String -> List (Html a) ->  Html a
-card c title content =
-  Card.view [Color.background c]
-  [ Card.title [] [ text title ]
-  , Card.text [] content
+style : Int -> List (Style a)
+style h =
+  [ css "text-sizing" "border-box"
+  , css "height" (toString h ++ "px")
+  , css "padding-left" "8px"
+  , css "padding-top" "4px"
+  , css "color" "white"
+  , size All 6
   ]
+
+card: Color.Color -> String -> List (Html Msg) ->  Html Msg
+card c title content =
+  Card.view
+    [ Color.background c
+    , Elevation.e8
+    ]
+  [ Card.title [] [ Card.head [] [text title]]
+    , Card.text [] content
+    ]
 
 -- die view
 
-dieView : Model -> Html Msg
+dieView: Model -> Html Msg
 dieView model =
-  card (Color.color Color.DeepOrange Color.S400) "Die"
-  [ div [] [text (toString model.dieFace)]
-  , div [] [button [ onClick RollDie ] [ text "Roll" ]]
-  ]
+  card (Color.color Color.DeepOrange Color.S400) "Die" <|
+    [ Options.div [Typo.display3, Typo.center] [text (toString model.dieFace)]
+    , btn model.mdl 0 "Roll" RollDie
+    ]
+
+btn mdl n t onClick =
+  Button.render Mdl [n] mdl
+    [ Button.raised
+    , Button.ripple
+    , Options.onClick onClick
+    ]
+    [ text t ]
+  |> List.singleton |> Options.div [Typo.right]
 
 -- price view
 
 priceView : Model -> Html Msg
 priceView model =
-   card  (Color.color Color.DeepPurple Color.S300) "Bitcoin"
-  [ div [] [ text (formatPrice model.price) ]
-  , div [] [ text (formatTime model.updateTime) ]
-  , div [] [ button [ onClick FetchPrice ] [ text "Refresh" ] ]
+   card  (Color.color Color.DeepPurple Color.S300) "Bitcoin" <|
+  [ Options.div [Typo.display3, Typo.center] [ text (formatPrice model.price) ]
+  , Options.div [Typo.caption] [ text (formatTime model.updateTime) ]
+  , btn model.mdl 1 "Refresh" FetchPrice
   ]
 
 formatPrice: Maybe Float -> String
