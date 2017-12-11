@@ -1,5 +1,4 @@
 import Html exposing (..)
-import Html.Events exposing (..)
 import Http
 import Random
 import Json.Decode exposing (..)
@@ -109,21 +108,24 @@ style h =
   , size All 6
   ]
 
-card: Color.Color -> String -> List (Html Msg) ->  Html Msg
-card c title content =
+-- card: Color.Color -> String -> List (Html Msg) ->  Html Msg
+card c title subtitle content =
   Card.view
     [ Color.background c
     , Elevation.e8
     ]
-  [ Card.title [] [ Card.head [] [text title]]
-    , Card.text [] content
+  [ Card.title []
+      [ Card.head [] [text title]
+      , Card.subhead [Typo.caption] [text <| Maybe.withDefault "" subtitle]
+      ]
+  , Card.text [] content
     ]
 
 -- die view
 
 dieView: Model -> Html Msg
 dieView model =
-  card (Color.color Color.DeepOrange Color.S400) "Die" <|
+  card (Color.color Color.DeepOrange Color.S400) "Die" Nothing <|
     [ Options.div [Typo.display3, Typo.center] [text (toString model.dieFace)]
     , btn model.mdl 0 "Roll" RollDie
     ]
@@ -141,9 +143,9 @@ btn mdl n t onClick =
 
 priceView : Model -> Html Msg
 priceView model =
-   card  (Color.color Color.DeepPurple Color.S300) "Bitcoin" <|
-  [ Options.div [Typo.display3, Typo.center] [ text (formatPrice model.price) ]
-  , Options.div [Typo.caption] [ text (formatTime model.updateTime) ]
+   card  (Color.color Color.DeepPurple Color.S300) "Bitcoin"
+   (formatTime model.updateTime) <|
+  [ Options.div [Typo.display3, Typo.center] [ text <| formatPrice model.price ]
   , btn model.mdl 1 "Refresh" FetchPrice
   ]
 
@@ -153,10 +155,9 @@ formatPrice maybePrice =
   |> Maybe.map (\p -> "$" ++ toString p)
   |> Maybe.withDefault "N/A"
 
-formatTime: Maybe Float -> String
+formatTime: Maybe Float -> Maybe String
 formatTime maybeTime =
   maybeTime
   |> Maybe.map Date.fromTime
   |> Maybe.map (Date.Format.format "%H:%M:%S")
   |> Maybe.map ((++) "Updated at ")
-  |> Maybe.withDefault ""
