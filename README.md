@@ -18,6 +18,11 @@ For live reload:
 
 `elm make src/Main.elm --output index.html`
 
+## Credits
+
+* Dice vicki4net@pixabay <https://pixabay.com/en/games-die-dice-spot-dot-cube-1693114/>
+* Soap bubble <http://maxpixel.freegreatpicture.com/Ease-Float-Background-Soap-Bubbles-Blow-Fly-Water-2670288>
+
 ## License
 
 MIT

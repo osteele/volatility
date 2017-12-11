@@ -97,27 +97,18 @@ view model =
   |> Material.Scheme.top
 
 tile : Html a -> Material.Grid.Cell a
-tile card = cell (style 200) [ card ]
-
-style : Int -> List (Style a)
-style h =
-  [ css "text-sizing" "border-box"
-  , css "height" (toString h ++ "px")
-  , css "padding-left" "8px"
-  , css "padding-top" "4px"
-  , css "color" "white"
-  , size All 6
-  ]
+tile card = cell [size All 4] [ card ]
 
 -- card: Color.Color -> String -> List (Html Msg) ->  Html Msg
-card c title subtitle content =
+card titleCss bgColor bgImage title subtitle content =
   Card.view
-    [ Color.background c
+    [ -- Color.background bgColor
+      css "background" <| "url(" ++ bgImage ++ ") center / cover"
     , Elevation.e8
     ]
-  [ Card.title []
+  [ Card.title [  ]
       [ Card.head [] [text title]
-      , Card.subhead [Typo.caption] [text <| Maybe.withDefault "" subtitle]
+      , Card.subhead [Typo.caption] [text <| Maybe.withDefault "." subtitle]
       ]
   , Card.text [] content
     ]
@@ -126,8 +117,8 @@ card c title subtitle content =
 
 dieView: Model -> Html Msg
 dieView model =
-  card (Color.color Color.DeepOrange Color.S400) "Die" Nothing <|
-    [ Options.div [Typo.display3, Typo.center] [text (toString model.dieFace)]
+  card [] (Color.color Color.DeepOrange Color.S400) "assets/dim-die.jpg" "Six-Sided Die" Nothing <|
+    [ Options.div [ Typo.display3, Typo.center, Color.text Color.white ] [ text <| toString model.dieFace ]
     , btn model.mdl 0 "Roll" RollDie
     ]
 
@@ -144,11 +135,13 @@ btn mdl n t onClick =
 
 priceView : Model -> Html Msg
 priceView model =
-   card  (Color.color Color.DeepPurple Color.S300) "Bitcoin"
+   card [] (Color.color Color.DeepPurple Color.S300) "assets/bubble.jpg" "Bitcoin"
    (formatTime model.updateTime) <|
-  [ Options.div [Typo.display3, Typo.center] [ text <| formatPrice model.price ]
+  [ Options.div [ Typo.display3, Typo.center, Color.text Color.black ] [ text <| formatPrice model.price ]
   , btn model.mdl 1 "Refresh" FetchPrice
   ]
+
+-- formatters
 
 formatPrice: Maybe Float -> String
 formatPrice maybePrice =
@@ -165,9 +158,10 @@ formatTime maybeTime =
   |> Maybe.map (Date.Format.format "%H:%M:%S")
   |> Maybe.map ((++) "Updated at ")
 
+addCommas: String -> String
 addCommas s =
   String.reverse s
-  |> Regex.find Regex.All (Regex.regex "(\\d+\\.)?\\d{0,3}")
+  |> Regex.find Regex.All (Regex.regex "(\\d*\\.)?\\d{0,3}")
   |> List.map (\m -> m.match)
   |> String.join ","
   |> String.reverse
