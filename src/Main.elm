@@ -4,6 +4,7 @@ import Random
 import Json.Decode exposing (..)
 import Time exposing (Time)
 import Date
+import Regex
 import Task
 import Date.Format
 import Material
@@ -152,7 +153,9 @@ priceView model =
 formatPrice: Maybe Float -> String
 formatPrice maybePrice =
   maybePrice
-  |> Maybe.map (\p -> "$" ++ toString p)
+  |> Maybe.map toString
+  |> Maybe.map addCommas
+  |> Maybe.map ((++) "$")
   |> Maybe.withDefault "N/A"
 
 formatTime: Maybe Float -> Maybe String
@@ -161,3 +164,10 @@ formatTime maybeTime =
   |> Maybe.map Date.fromTime
   |> Maybe.map (Date.Format.format "%H:%M:%S")
   |> Maybe.map ((++) "Updated at ")
+
+addCommas s =
+  String.reverse s
+  |> Regex.find Regex.All (Regex.regex "(\\d+\\.)?\\d{0,3}")
+  |> List.map (\m -> m.match)
+  |> String.join ","
+  |> String.reverse
