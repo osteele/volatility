@@ -14,7 +14,6 @@ import Material.Color as Color
 import Material.Elevation as Elevation
 import Material.Footer as Footer
 import Material.Grid exposing (grid, cell, size, Device(..))
-import Material.Layout as Layout
 import Material.Options as Options
 import Material.Options exposing (Style, css)
 import Material.Scheme
@@ -95,9 +94,15 @@ view model =
   grid []
     [ tile <| dieView model
     , tile <| priceView model
+    , cell [ size All 12 ] [ caption ]
     ]
-  |> \g -> Html.div [] [g, footer]
+  |> \g -> Html.div [] [ g, footer ]
   |> Material.Scheme.top
+
+caption =
+  Options.styled p
+  [ Typo.caption ]
+  [ text "Two sources of volatility. One sweet page. This is not investment advice." ]
 
 footer: Html Msg
 footer =
