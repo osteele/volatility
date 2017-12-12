@@ -99,6 +99,7 @@ view model =
   |> \g -> Html.div [] [ g, footer ]
   |> Material.Scheme.top
 
+caption: Html Msg
 caption =
   Options.styled p
   [ Typo.caption ]
@@ -126,7 +127,7 @@ card bgImage title subtitle content =
       css "background" <| "url(" ++ bgImage ++ ") center / cover"
     , Elevation.e8
     ]
-  [ Card.title [  ]
+  [ Card.title []
       [ Card.head [] [text title]
       , Card.subhead [Typo.caption] [text <| Maybe.withDefault "." subtitle]
       ]
@@ -140,11 +141,12 @@ dieView model =
   card "assets/dim-die.jpg" "Six-Sided Die" Nothing
   <| [
       Options.div [ Typo.display3, Typo.center, Color.text Color.white ] [ text <| toString model.dieFace ]
-    , btn model.mdl 0 "Roll" RollDie
+    , button model 0 "Roll" RollDie
       ]
 
-btn mdl n t onClick =
-  Button.render Mdl [n] mdl
+button: Model -> Int -> String -> Msg -> Html Msg
+button model n t onClick =
+  Button.render Mdl [n] model.mdl
     [ Button.raised
     , Button.ripple
     , Options.onClick onClick
@@ -159,7 +161,7 @@ priceView model =
    card "assets/bubble.jpg" "Bitcoin" (formatTime model.updateTime)
   <| [
     Options.div [ Typo.display3, Typo.center, Color.text Color.black ] [ text <| formatPrice model.price ]
-  , btn model.mdl 1 "Refresh" FetchPrice
+  , button model 1 "Refresh" FetchPrice
   ]
 
 -- formatters
