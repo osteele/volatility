@@ -2,7 +2,7 @@ import Html exposing (..)
 import Http
 import Random
 import Json.Decode exposing (..)
-import Time exposing (Time)
+import Time exposing (Time, second)
 import Char
 import Date
 import Regex
@@ -34,6 +34,7 @@ main =
 type alias Model =
   { dieFace : Int
   , price: Maybe Float
+  , curTime: Maybe Time
   , updateTime : Maybe Time
   , mdl : Material.Model
   }
@@ -41,7 +42,12 @@ type alias Model =
 
 init : (Model, Cmd Msg)
 init =
-  ( Model 0 Nothing Nothing Material.model
+  ( { dieFace = 0
+    , price = Nothing
+    , curTime = Nothing
+    , updateTime = Nothing
+    , mdl = Material.model
+    }
   , Cmd.batch [ rollDie, fetchPrice ])
 
 -- messages
@@ -52,6 +58,7 @@ type Msg
   | SetDieFace Int
   | ReceivePrice (Result Http.Error Float)
   | SetPriceTimestamp Time
+  | Tick Time
   | Mdl (Material.Msg Msg)
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -63,22 +70,16 @@ update msg model =
     ReceivePrice (Ok price) -> ({ model | price = Just price }, updatePriceTimestamp)
     ReceivePrice (Err _) -> (model, Cmd.none)
     SetPriceTimestamp t -> ({ model | updateTime = Just t }, Cmd.none)
+    Tick t -> ({ model | curTime = Just t }, Cmd.none)
     Mdl msg_ -> Material.update Mdl msg_ model
 
 -- subscriptions
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Sub.none
+  Time.every second Tick
 
 -- commands
-
-updatePriceTimestamp: Cmd Msg
-updatePriceTimestamp =
-  Task.perform SetPriceTimestamp Time.now
-
-rollDie : Cmd Msg
-rollDie = Random.generate SetDieFace (Random.int 1 6)
 
 fetchPrice : Cmd Msg
 fetchPrice =
@@ -87,6 +88,16 @@ fetchPrice =
     decoder = at ["USD"] <| field "last" float
     request = Http.get url decoder
   in Http.send ReceivePrice request
+
+rollDie : Cmd Msg
+rollDie =
+  Random.int 1 6
+  |> Random.generate SetDieFace
+
+updatePriceTimestamp: Cmd Msg
+updatePriceTimestamp =
+  Task.perform SetPriceTimestamp Time.now
+
 
 -- views
 
@@ -108,15 +119,30 @@ caption =
 
 footer: Html Msg
 footer =
-  Footer.mini [Color.background Color.white]
-    { left =
-        Footer.left []
-          [ Footer.links []
-              [ Footer.linkItem [ Footer.href "https://github.com/osteele/coindie#credits" ] [ Footer.html <| text "Credits"]
-              ]
-          ]
-    , right = Footer.right [] []
-    }
+  let
+    url = "https://github.com/osteele/coindie#credits"
+  in
+    Footer.mini [ Color.background Color.white ]
+      { left =
+          Footer.left []
+            [ Footer.links []
+                [ Footer.linkItem
+                  [ Footer.href url ]
+                  [ Footer.html <| text "Credits"]
+                ]
+            ]
+      , right = Footer.right [] []
+      }
+
+button: Model -> Int -> String -> Msg -> Html Msg
+button model index txt onClick =
+  Button.render Mdl [index] model.mdl
+    [ Button.raised
+    , Button.ripple
+    , Options.onClick onClick
+    ]
+    [ text txt ]
+  |> List.singleton |> Options.div [Typo.right]
 
 tile : Html a -> Material.Grid.Cell a
 tile card = cell [size All 4] [ card ]
@@ -127,11 +153,11 @@ card cardType title subtitle content =
     [ css "background" <| "url('" ++ (bgImage cardType) ++ "') center / cover"
     , Elevation.e8
     ]
-  [ Card.title []
+    [ Card.title []
       [ Card.head [] [text title]
       , Card.subhead [Typo.caption] [text <| Maybe.withDefault nbsp subtitle]
       ]
-  , Card.text [] content
+    , Card.text [] content
     ]
 
 -- cards
@@ -148,27 +174,18 @@ bgImage cardType =
 
 dieView: Model -> Html Msg
 dieView model =
-  card DieCard "Six-Sided Die" Nothing
-  <| [
-      Options.div [ Typo.display3, Typo.center, Color.text Color.white ] [ text <| toString model.dieFace ]
-    , button model 0 "Roll" RollDie
-      ]
-
-button: Model -> Int -> String -> Msg -> Html Msg
-button model n t onClick =
-  Button.render Mdl [n] model.mdl
-    [ Button.raised
-    , Button.ripple
-    , Options.onClick onClick
-    ]
-    [ text t ]
-  |> List.singleton |> Options.div [Typo.right]
+  [ Options.div
+      [ Typo.display3, Typo.center, Color.text Color.white ]
+      [ text <| toString model.dieFace ]
+  , button model 0 "Roll" RollDie
+  ]
+  |> card DieCard "Six-Sided Die" Nothing
 
 -- price view
 
 priceView : Model -> Html Msg
 priceView model =
-   card PriceCard "Bitcoin" (formatTime model.updateTime)
+  card PriceCard "Bitcoin" (formatTime model.updateTime)
   <| [
     Options.div [ Typo.display3, Typo.center, Color.text Color.black ] [ text <| formatPrice model.price ]
   , button model 1 "Refresh" FetchPrice
