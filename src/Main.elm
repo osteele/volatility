@@ -190,15 +190,16 @@ priceView : Model -> Html Msg
 priceView model =
   let
     subtitle =
-      formatTime model.updateTime
+      model.updateTime
+      |> Maybe.map formatTime
+      |> Maybe.map ((++) "Updated at ")
 
     elapsedTime =
-      case (model.curTime, model.updateTime) of
-        (Just t0, Just t1) -> Just <| (t0 - t1) / 1000
-        (_, _) -> Nothing
+      Maybe.map2 (-) model.curTime model.updateTime
+      |> Maybe.map (flip (/) 1000)
 
     remainingTime =
-      elapsedTime |> Maybe.map (\t -> 15.0 - t ) |> Maybe.map ceiling
+      elapsedTime |> Maybe.map ((-) 15.0) |> Maybe.map ceiling
 
     disabled =
       case remainingTime of
@@ -207,11 +208,8 @@ priceView model =
 
     disabledButtonText =
       remainingTime
-      |> Maybe.map (\n -> "Can refresh in " ++ (toString n) ++ pluralize " second" n)
+      |> Maybe.map (\n -> "Refreshable in " ++ (toString n) ++ pluralize " second" n)
       |> Maybe.withDefault "Waiting for results"
-
-    pluralize noun n =
-      if n == 1 then noun else noun ++ "s"
 
     buttonProps =
       if disabled then [ Button.disabled ] else []
@@ -220,21 +218,30 @@ priceView model =
       if disabled then "[" ++ disabledButtonText ++ "…]" else "Refresh"
 
     priceDelta =
-      case (model.lastPrice, model.price) of
-        (Just p0, Just p1) -> Just <| p1 - p0
-        (_, _) -> Just 1.0
+      Maybe.map2 (-) model.price model.lastPrice
 
     priceDeltaColor =
       case priceDelta of
-        Just d -> if d >= 0 then Color.color Color.Green Color.S900 else Color.color Color.Red Color.S900
-        Nothing -> Color.black
+        Just d ->
+          if d >= 0 then Color.color Color.Green Color.S900 else Color.color Color.Red Color.S900
+        Nothing ->
+          Color.black
 
     priceDeltaText =
-      priceDelta
-      |> Maybe.map (\d -> if e == 0 then "0" else if d >= 0 then "+" ++ (formatDecimal 2 d) else (formatDecimal 2 d))
-      |> Maybe.withDefault nbsp
+      let
+        fmt p =
+          let
+            s = formatDecimal 2 p
+            zero = formatDecimal 2 0
+          in
+            if s == zero then "no change!" else if p > 0 then "+" ++ s else s
+      in
+        priceDelta
+        |> Maybe.map fmt
+        |> Maybe.withDefault nbsp
   in
-    [ Options.div [ Typo.display3, Typo.center, Color.text Color.black ] [ text <| formatPrice model.price ]
+    [ Options.div [ Typo.display3, Typo.center, Color.text Color.black ]
+      [ text <| Maybe.withDefault "NA" <| Maybe.map formatPrice <| model.price ]
     , Options.div [ Typo.display1, Typo.right, Color.text priceDeltaColor ] [ text <| priceDeltaText ]
     , button model 1 buttonProps buttonTitle FetchPrice
     ]
@@ -249,7 +256,7 @@ addCommas s =
   s
   |> String.reverse
   |> Regex.find Regex.All (Regex.regex "(\\d*\\.)?\\d{0,3}")
-  |> List.map (\m -> m.match)
+  |> List.map .match
   |> String.join ","
   |> String.reverse
 
@@ -258,26 +265,27 @@ formatDecimal places x =
   let
     m = 10^places
     n = round((toFloat m) * x)
-    frac = toString (n % m)
-    padding = String.fromList <| List.repeat (places - String.length frac) '0'
-  in (toString (n // m)) ++ "." ++ frac ++ padding -- ++ -- "," ++ (toString m)
+    whole = toString <| n // m
+    frac = toString <| n % m
+    padding = List.repeat (places - String.length frac) '0' |> String.fromList
+  in
+    whole ++ "." ++ frac ++ padding
 
-formatPrice: Maybe Float -> String
-formatPrice maybePrice =
-  maybePrice
-  -- |> Maybe.map toString
-  |> Maybe.map (formatDecimal 2)
-  |> Maybe.map addCommas
-  |> Maybe.map ((++) "$")
-  |> Maybe.withDefault "N/A"
+formatPrice: Float -> String
+formatPrice price =
+  price
+  |> formatDecimal 2
+  |> addCommas
+  |> (++) "$"
 
-formatTime: Maybe Float -> Maybe String
-formatTime maybeTime =
-  maybeTime
-  |> Maybe.map Date.fromTime
-  |> Maybe.map (Date.Format.format "%H:%M:%S")
-  |> Maybe.map ((++) "Updated at ")
+formatTime: Time -> String
+formatTime =
+  Date.fromTime >> Date.Format.format "%H:%M:%S"
 
 {-| Non-printing string, for aligning cells -}
 nbsp: String
 nbsp = Char.fromCode 0x00A0 |> String.fromChar
+
+pluralize: String -> Int -> String
+pluralize noun n =
+  if n == 1 then noun else noun ++ "s"
