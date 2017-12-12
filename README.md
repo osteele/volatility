@@ -20,7 +20,7 @@ For live reload:
 
 ## Credits
 
-Blockchain info is form the [Blockchain.info](https://blockchain.info) API.
+Blockchain info is form the [Blockchain.info API](https://blockchain.info/api).
 
 Images:
 * Dice vicki4net@pixabay <https://pixabay.com/en/games-die-dice-spot-dot-cube-1693114/>

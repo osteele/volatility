@@ -33,6 +33,7 @@ main =
 
 type alias Model =
   { dieFace : Int
+  , lastPrice: Maybe Float
   , price: Maybe Float
   , curTime: Maybe Time
   , updateTime : Maybe Time
@@ -43,6 +44,7 @@ type alias Model =
 init : (Model, Cmd Msg)
 init =
   ( { dieFace = 0
+    , lastPrice = Nothing
     , price = Nothing
     , curTime = Nothing
     , updateTime = Nothing
@@ -67,7 +69,8 @@ update msg model =
     RollDie -> (model, rollDie)
     SetDieFace face -> ({ model | dieFace = face }, Cmd.none)
     FetchPrice -> (model, fetchPrice)
-    ReceivePrice (Ok price) -> ({ model | price = Just price }, updatePriceTimestamp)
+    ReceivePrice (Ok price) ->
+      ({ model | price = Just price, lastPrice = model.price }, updatePriceTimestamp)
     ReceivePrice (Err _) -> (model, Cmd.none)
     SetPriceTimestamp t -> ({ model | updateTime = Just t }, Cmd.none)
     Tick t -> ({ model | curTime = Just t }, Cmd.none)
@@ -97,7 +100,6 @@ rollDie =
 updatePriceTimestamp: Cmd Msg
 updatePriceTimestamp =
   Task.perform SetPriceTimestamp Time.now
-
 
 -- views
 
@@ -177,6 +179,7 @@ dieView model =
   [ Options.div
       [ Typo.display3, Typo.center, Color.text Color.white ]
       [ text <| toString model.dieFace ]
+  , Options.div [Typo.display1] [ text nbsp ]
   , button model 0 [] "Roll" RollDie
   ]
   |> card DieCard "Six-Sided Die" Nothing
@@ -186,21 +189,24 @@ dieView model =
 priceView : Model -> Html Msg
 priceView model =
   let
-    elapsed =
+    subtitle =
+      formatTime model.updateTime
+
+    elapsedTime =
       case (model.curTime, model.updateTime) of
         (Just t0, Just t1) -> Just <| (t0 - t1) / 1000
         (_, _) -> Nothing
 
-    remaining =
-      elapsed |> Maybe.map (\t -> 15.0 - t ) |> Maybe.map ceiling
+    remainingTime =
+      elapsedTime |> Maybe.map (\t -> 15.0 - t ) |> Maybe.map ceiling
 
     disabled =
-      case remaining of
+      case remainingTime of
         Just n -> n > 0
         Nothing -> True
 
     disabledButtonText =
-      remaining
+      remainingTime
       |> Maybe.map (\n -> "Can refresh in " ++ (toString n) ++ pluralize " second" n)
       |> Maybe.withDefault "Waiting for results"
 
@@ -213,9 +219,23 @@ priceView model =
     buttonTitle =
       if disabled then "[" ++ disabledButtonText ++ "…]" else "Refresh"
 
-    subtitle = formatTime model.updateTime
+    priceDelta =
+      case (model.lastPrice, model.price) of
+        (Just p0, Just p1) -> Just <| p1 - p0
+        (_, _) -> Just 1.0
+
+    priceDeltaColor =
+      case priceDelta of
+        Just d -> if d >= 0 then Color.color Color.Green Color.S900 else Color.color Color.Red Color.S900
+        Nothing -> Color.black
+
+    priceDeltaText =
+      priceDelta
+      |> Maybe.map (\d -> if e == 0 then "0" else if d >= 0 then "+" ++ (formatDecimal 2 d) else (formatDecimal 2 d))
+      |> Maybe.withDefault nbsp
   in
     [ Options.div [ Typo.display3, Typo.center, Color.text Color.black ] [ text <| formatPrice model.price ]
+    , Options.div [ Typo.display1, Typo.right, Color.text priceDeltaColor ] [ text <| priceDeltaText ]
     , button model 1 buttonProps buttonTitle FetchPrice
     ]
     |> card PriceCard "Bitcoin" subtitle
@@ -223,18 +243,30 @@ priceView model =
 -- formatters
 
 {-| Insert thousands separators in an number string -}
-addCommas: number -> String
-addCommas n =
-  toString n
+addCommas: String -> String
+addCommas s =
+  -- toString n
+  s
   |> String.reverse
   |> Regex.find Regex.All (Regex.regex "(\\d*\\.)?\\d{0,3}")
   |> List.map (\m -> m.match)
   |> String.join ","
   |> String.reverse
 
+formatDecimal: Int -> Float -> String
+formatDecimal places x =
+  let
+    m = 10^places
+    n = round((toFloat m) * x)
+    frac = toString (n % m)
+    padding = String.fromList <| List.repeat (places - String.length frac) '0'
+  in (toString (n // m)) ++ "." ++ frac ++ padding -- ++ -- "," ++ (toString m)
+
 formatPrice: Maybe Float -> String
 formatPrice maybePrice =
   maybePrice
+  -- |> Maybe.map toString
+  |> Maybe.map (formatDecimal 2)
   |> Maybe.map addCommas
   |> Maybe.map ((++) "$")
   |> Maybe.withDefault "N/A"
