@@ -134,13 +134,13 @@ footer =
       , right = Footer.right [] []
       }
 
-button: Model -> Int -> String -> Msg -> Html Msg
-button model index txt onClick =
+button: Model -> Int -> List (Button.Property Msg) -> String -> Msg -> Html Msg
+button model index props txt onClick =
   Button.render Mdl [index] model.mdl
-    [ Button.raised
+    ([ Button.raised
     , Button.ripple
     , Options.onClick onClick
-    ]
+    ] ++ props)
     [ text txt ]
   |> List.singleton |> Options.div [Typo.right]
 
@@ -177,7 +177,7 @@ dieView model =
   [ Options.div
       [ Typo.display3, Typo.center, Color.text Color.white ]
       [ text <| toString model.dieFace ]
-  , button model 0 "Roll" RollDie
+  , button model 0 [] "Roll" RollDie
   ]
   |> card DieCard "Six-Sided Die" Nothing
 
@@ -185,11 +185,40 @@ dieView model =
 
 priceView : Model -> Html Msg
 priceView model =
-  card PriceCard "Bitcoin" (formatTime model.updateTime)
-  <| [
-    Options.div [ Typo.display3, Typo.center, Color.text Color.black ] [ text <| formatPrice model.price ]
-  , button model 1 "Refresh" FetchPrice
-  ]
+  let
+    elapsed =
+      case (model.curTime, model.updateTime) of
+        (Just t0, Just t1) -> Just <| (t0 - t1) / 1000
+        (_, _) -> Nothing
+
+    remaining =
+      elapsed |> Maybe.map (\t -> 15.0 - t ) |> Maybe.map ceiling
+
+    disabled =
+      case remaining of
+        Just n -> n > 0
+        Nothing -> True
+
+    disabledButtonText =
+      remaining
+      |> Maybe.map (\n -> "Can refresh in " ++ (toString n) ++ pluralize " second" n)
+      |> Maybe.withDefault "Waiting for results"
+
+    pluralize noun n =
+      if n == 1 then noun else noun ++ "s"
+
+    buttonProps =
+      if disabled then [ Button.disabled ] else []
+
+    buttonTitle =
+      if disabled then "[" ++ disabledButtonText ++ "…]" else "Refresh"
+
+    subtitle = formatTime model.updateTime
+  in
+    [ Options.div [ Typo.display3, Typo.center, Color.text Color.black ] [ text <| formatPrice model.price ]
+    , button model 1 buttonProps buttonTitle FetchPrice
+    ]
+    |> card PriceCard "Bitcoin" subtitle
 
 -- formatters
 
