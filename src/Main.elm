@@ -3,6 +3,7 @@ import Http
 import Random
 import Json.Decode exposing (..)
 import Time exposing (Time)
+import Char
 import Date
 import Regex
 import Task
@@ -120,25 +121,34 @@ footer =
 tile : Html a -> Material.Grid.Cell a
 tile card = cell [size All 4] [ card ]
 
--- card: Color.Color -> String -> List (Html Msg) ->  Html Msg
-card bgImage title subtitle content =
+card: CardType -> String -> Maybe String -> List (Html Msg) ->  Html Msg
+card cardType title subtitle content =
   Card.view
-    [ -- Color.background bgColor
-      css "background" <| "url(" ++ bgImage ++ ") center / cover"
+    [ css "background" <| "url('" ++ (bgImage cardType) ++ "') center / cover"
     , Elevation.e8
     ]
   [ Card.title []
       [ Card.head [] [text title]
-      , Card.subhead [Typo.caption] [text <| Maybe.withDefault "." subtitle]
+      , Card.subhead [Typo.caption] [text <| Maybe.withDefault nbsp subtitle]
       ]
   , Card.text [] content
     ]
+
+-- cards
+
+type CardType = DieCard | PriceCard
+
+bgImage: CardType -> String
+bgImage cardType =
+  case cardType of
+    DieCard -> "assets/dim-die.jpg"
+    PriceCard -> "assets/bubble.jpg"
 
 -- die view
 
 dieView: Model -> Html Msg
 dieView model =
-  card "assets/dim-die.jpg" "Six-Sided Die" Nothing
+  card DieCard "Six-Sided Die" Nothing
   <| [
       Options.div [ Typo.display3, Typo.center, Color.text Color.white ] [ text <| toString model.dieFace ]
     , button model 0 "Roll" RollDie
@@ -158,7 +168,7 @@ button model n t onClick =
 
 priceView : Model -> Html Msg
 priceView model =
-   card "assets/bubble.jpg" "Bitcoin" (formatTime model.updateTime)
+   card PriceCard "Bitcoin" (formatTime model.updateTime)
   <| [
     Options.div [ Typo.display3, Typo.center, Color.text Color.black ] [ text <| formatPrice model.price ]
   , button model 1 "Refresh" FetchPrice
@@ -166,10 +176,19 @@ priceView model =
 
 -- formatters
 
+{-| Insert thousands separators in an number string -}
+addCommas: number -> String
+addCommas n =
+  toString n
+  |> String.reverse
+  |> Regex.find Regex.All (Regex.regex "(\\d*\\.)?\\d{0,3}")
+  |> List.map (\m -> m.match)
+  |> String.join ","
+  |> String.reverse
+
 formatPrice: Maybe Float -> String
 formatPrice maybePrice =
   maybePrice
-  |> Maybe.map toString
   |> Maybe.map addCommas
   |> Maybe.map ((++) "$")
   |> Maybe.withDefault "N/A"
@@ -181,10 +200,6 @@ formatTime maybeTime =
   |> Maybe.map (Date.Format.format "%H:%M:%S")
   |> Maybe.map ((++) "Updated at ")
 
-addCommas: String -> String
-addCommas s =
-  String.reverse s
-  |> Regex.find Regex.All (Regex.regex "(\\d*\\.)?\\d{0,3}")
-  |> List.map (\m -> m.match)
-  |> String.join ","
-  |> String.reverse
+{-| Non-printing string, for aligning cells -}
+nbsp: String
+nbsp = Char.fromCode 0x00A0 |> String.fromChar
