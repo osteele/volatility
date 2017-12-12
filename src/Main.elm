@@ -12,7 +12,9 @@ import Material.Button as Button
 import Material.Card as Card
 import Material.Color as Color
 import Material.Elevation as Elevation
+import Material.Footer as Footer
 import Material.Grid exposing (grid, cell, size, Device(..))
+import Material.Layout as Layout
 import Material.Options as Options
 import Material.Options exposing (Style, css)
 import Material.Scheme
@@ -94,13 +96,26 @@ view model =
     [ tile <| dieView model
     , tile <| priceView model
     ]
+  |> \g -> Html.div [] [g, footer]
   |> Material.Scheme.top
+
+footer: Html Msg
+footer =
+  Footer.mini [Color.background Color.white]
+    { left =
+        Footer.left []
+          [ Footer.links []
+              [ Footer.linkItem [ Footer.href "https://github.com/osteele/coindie#credits" ] [ Footer.html <| text "Credits"]
+              ]
+          ]
+    , right = Footer.right [] []
+    }
 
 tile : Html a -> Material.Grid.Cell a
 tile card = cell [size All 4] [ card ]
 
 -- card: Color.Color -> String -> List (Html Msg) ->  Html Msg
-card titleCss bgColor bgImage title subtitle content =
+card bgImage title subtitle content =
   Card.view
     [ -- Color.background bgColor
       css "background" <| "url(" ++ bgImage ++ ") center / cover"
@@ -117,10 +132,11 @@ card titleCss bgColor bgImage title subtitle content =
 
 dieView: Model -> Html Msg
 dieView model =
-  card [] (Color.color Color.DeepOrange Color.S400) "assets/dim-die.jpg" "Six-Sided Die" Nothing <|
-    [ Options.div [ Typo.display3, Typo.center, Color.text Color.white ] [ text <| toString model.dieFace ]
+  card "assets/dim-die.jpg" "Six-Sided Die" Nothing
+  <| [
+      Options.div [ Typo.display3, Typo.center, Color.text Color.white ] [ text <| toString model.dieFace ]
     , btn model.mdl 0 "Roll" RollDie
-    ]
+      ]
 
 btn mdl n t onClick =
   Button.render Mdl [n] mdl
@@ -135,9 +151,9 @@ btn mdl n t onClick =
 
 priceView : Model -> Html Msg
 priceView model =
-   card [] (Color.color Color.DeepPurple Color.S300) "assets/bubble.jpg" "Bitcoin"
-   (formatTime model.updateTime) <|
-  [ Options.div [ Typo.display3, Typo.center, Color.text Color.black ] [ text <| formatPrice model.price ]
+   card "assets/bubble.jpg" "Bitcoin" (formatTime model.updateTime)
+  <| [
+    Options.div [ Typo.display3, Typo.center, Color.text Color.black ] [ text <| formatPrice model.price ]
   , btn model.mdl 1 "Refresh" FetchPrice
   ]
 
