@@ -20,11 +20,9 @@ For live reload:
 
 ## Credits
 
-Blockchain info is form the [Blockchain.info API](https://blockchain.info/api).
-
-Images:
-* Dice vicki4net@pixabay <https://pixabay.com/en/games-die-dice-spot-dot-cube-1693114/>
-* Soap bubble <http://maxpixel.freegreatpicture.com/Ease-Float-Background-Soap-Bubbles-Blow-Fly-Water-2670288>
+* Blockchain info is from the [Blockchain.info API](https://blockchain.info/api).
+* The “dice” image is from vicki4net@pixabay <https://pixabay.com/en/games-die-dice-spot-dot-cube-1693114/>
+* The “soap bubble” image is from <http://maxpixel.freegreatpicture.com/Ease-Float-Background-Soap-Bubbles-Blow-Fly-Water-2670288>
 
 ## License
 
