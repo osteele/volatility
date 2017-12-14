@@ -5,7 +5,6 @@ import Json.Decode exposing (..)
 import Time exposing (Time, second)
 import Char
 import Date
-import Regex
 import Task
 import Date.Format
 import Material
@@ -19,6 +18,7 @@ import Material.Options as Options
 import Material.Options exposing (Style, css)
 import Material.Scheme
 import Material.Typography as Typo
+import Currency exposing (..)
 
 
 main: Program Never Model Msg
@@ -290,7 +290,7 @@ priceView model =
         |> Maybe.withDefault nbsp
   in
     [ Options.div [ Typo.display3, Typo.center, Color.text Color.black ]
-      [ text <| Maybe.withDefault "NA" <| Maybe.map formatPrice <| model.price ]
+      [ text <| Maybe.withDefault "NA" <| Maybe.map (formatPrice "$") <| model.price ]
     , Options.div [ Typo.display1, Typo.right, Color.text priceDeltaColor ] [ text <| priceDeltaText ]
     , button model 1 buttonProps buttonTitle FetchPrice
     ]
@@ -298,46 +298,6 @@ priceView model =
 
 
 -- formatters
-
-
-{-| Insert thousands separators in an number string -}
-addCommas: String -> String
-addCommas s =
-  s
-  |> String.reverse
-  |> Regex.find Regex.All (Regex.regex "(\\d*\\.)?\\d{0,3}")
-  |> List.map .match
-  |> String.join ","
-  |> String.reverse
-
-
-formatDecimal: Int -> Float -> String
-formatDecimal places x =
-  let
-    m =
-      10^places
-
-    n =
-      round((toFloat m) * x)
-
-    whole =
-      toString <| n // m
-
-    frac =
-      toString <| n % m
-
-    padding =
-      List.repeat (places - String.length frac) '0' |> String.fromList
-  in
-    whole ++ "." ++ frac ++ padding
-
-
-formatPrice: Float -> String
-formatPrice price =
-  price
-  |> formatDecimal 2
-  |> addCommas
-  |> (++) "$"
 
 
 formatTime: Time -> String
