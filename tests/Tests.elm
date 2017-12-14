@@ -29,25 +29,47 @@ suite =
           in
             Expect.equal (String.Extra.replace "," "" <| addCommas s) s
       ]
+
     , describe "formatDecimal"
       -- FIXME places = 0
       [ test "rounds positive numbers"
-        <| \() -> Expect.equal (formatDecimal 2 123.456) "123.46"
+        <| \_ ->
+            formatDecimal 2 123.456
+            |> Expect.equal "123.46"
       , test "rounds negative numbers"
-        <| \() -> Expect.equal (formatDecimal 2 -123.456) "-123.46"
+        <| \_ ->
+            formatDecimal 2 -123.456
+            |> Expect.equal "-123.46"
       , test "rounds into the whole place"
-        <| \() -> Expect.equal (formatDecimal 2 123.999) "124.00"
+        <| \_ ->
+            formatDecimal 2 123.999
+            |> Expect.equal "124.00"
       , test "pads with zeros"
-        <| \() -> Expect.equal (formatDecimal 2 123.0) "123.00"
-      , fuzz2 (Fuzz.intRange 1 4) (Fuzz.map toFloat Fuzz.int) "includes places after the decimal"
+        <| \_ ->
+            formatDecimal 2 123.0
+            |> Expect.equal "123.00"
+      , fuzz2 (Fuzz.intRange 1 4) fuzzFloat "includes places after the decimal"
         <| \places number ->
-              let s = formatDecimal places number
-              in Expect.equal (String.split "." s |> Array.fromList |> Array.get 1 |> Maybe.map String.length) (Maybe.Just places)
+              let
+                s = formatDecimal places number
+              in
+                String.split "." s |> Array.fromList |> Array.get 1 |> Maybe.map String.length
+                |> Expect.equal (Maybe.Just places)
       ]
+
     , describe "formatPrice"
       [ test "includes decimals"
-        <| \() -> Expect.equal (formatPrice "$" 123.4) "$123.40"
+        <| \_ ->
+            formatPrice "$" 123.4
+            |> Expect.equal "$123.40"
       , test "works with negative numbers"
-        <| \() -> Expect.equal (formatPrice "$" -123.4) "$-123.40"
+        <| \_ ->
+          formatPrice "$" -123.4
+          |> Expect.equal "$-123.40"
       ]
     ]
+
+
+fuzzFloat: Fuzzer Float
+fuzzFloat =
+  Fuzz.map toFloat Fuzz.int
