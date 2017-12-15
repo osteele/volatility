@@ -32,7 +32,7 @@ formatDecimal places num =
   in
     if num < 0
         then "-" ++ (formatDecimal places -num)
-        else whole ++ "." ++ frac ++ padding
+        else whole ++ "." ++ padding ++ frac
 
 formatPrice: String -> Float -> String
 formatPrice symbol price =

@@ -1,6 +1,7 @@
 module Tests exposing (..)
 
 import Array
+import Random
 import String.Extra
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
@@ -48,13 +49,18 @@ suite =
         <| \_ ->
             formatDecimal 2 123.0
             |> Expect.equal "123.00"
-      , fuzz2 (Fuzz.intRange 1 4) fuzzFloat "includes places after the decimal"
-        <| \places number ->
+      , fuzz2 (Fuzz.intRange 1 4) fuzzDecimal "includes places after the decimal"
+        <| \places num ->
               let
-                s = formatDecimal places number
+                s = formatDecimal places num
               in
                 String.split "." s |> Array.fromList |> Array.get 1 |> Maybe.map String.length
                 |> Expect.equal (Maybe.Just places)
+      , fuzz2 (Fuzz.intRange 1 4) fuzzDecimal "agrees with the whole part"
+        <| \places num ->
+             formatDecimal places num |> String.toFloat
+              |> withOk
+                (Expect.within (places |> toFloat |> (/) 0.1 |> Expect.Absolute) num)
       ]
 
     , describe "formatPrice"
@@ -73,3 +79,15 @@ suite =
 fuzzFloat: Fuzzer Float
 fuzzFloat =
   Fuzz.map toFloat Fuzz.int
+
+fuzzDecimal: Fuzzer Float
+fuzzDecimal =
+  Fuzz.floatRange (toFloat <| Random.minInt // 10^4)  (toFloat <| Random.maxInt // 10^4)
+
+withOk: (a -> Expectation) -> Result String a -> Expectation
+withOk fn result =
+  case result of
+    Result.Err s ->
+      Expect.fail s
+    Result.Ok value ->
+      fn value
