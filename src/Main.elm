@@ -280,8 +280,8 @@ priceView model =
       let
         fmt p =
           let
-            s = formatDecimal 2 p
-            zero = formatDecimal 2 0
+            s = toDecimal 2 p
+            zero = toDecimal 2 0
           in
             if s == zero then "no change!" else if p > 0 then "+" ++ s else s
       in
@@ -290,7 +290,7 @@ priceView model =
         |> Maybe.withDefault nbsp
   in
     [ Options.div [ Typo.display3, Typo.center, Color.text Color.black ]
-      [ text <| Maybe.withDefault "NA" <| Maybe.map (formatPrice "$") <| model.price ]
+      [ text <| Maybe.withDefault "NA" <| Maybe.map (toPrice "$") <| model.price ]
     , Options.div [ Typo.display1, Typo.right, Color.text priceDeltaColor ] [ text <| priceDeltaText ]
     , button model 1 buttonProps buttonTitle FetchPrice
     ]

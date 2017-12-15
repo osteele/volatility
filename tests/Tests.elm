@@ -31,46 +31,46 @@ suite =
             Expect.equal (String.Extra.replace "," "" <| addCommas s) s
       ]
 
-    , describe "formatDecimal"
+    , describe "toDecimal"
       -- FIXME places = 0
       [ test "rounds positive numbers"
         <| \_ ->
-            formatDecimal 2 123.456
+            toDecimal 2 123.456
             |> Expect.equal "123.46"
       , test "rounds negative numbers"
         <| \_ ->
-            formatDecimal 2 -123.456
+            toDecimal 2 -123.456
             |> Expect.equal "-123.46"
       , test "rounds into the whole place"
         <| \_ ->
-            formatDecimal 2 123.999
+            toDecimal 2 123.999
             |> Expect.equal "124.00"
       , test "pads with zeros"
         <| \_ ->
-            formatDecimal 2 123.0
+            toDecimal 2 123.0
             |> Expect.equal "123.00"
       , fuzz2 (Fuzz.intRange 1 4) fuzzDecimal "includes places after the decimal"
         <| \places num ->
               let
-                s = formatDecimal places num
+                s = toDecimal places num
               in
                 String.split "." s |> Array.fromList |> Array.get 1 |> Maybe.map String.length
                 |> Expect.equal (Maybe.Just places)
       , fuzz2 (Fuzz.intRange 1 4) fuzzDecimal "agrees with the whole part"
         <| \places num ->
-             formatDecimal places num |> String.toFloat
+             toDecimal places num |> String.toFloat
               |> withOk
                 (Expect.within (places |> toFloat |> (/) 0.1 |> Expect.Absolute) num)
       ]
 
-    , describe "formatPrice"
+    , describe "toPrice"
       [ test "includes decimals"
         <| \_ ->
-            formatPrice "$" 123.4
+            toPrice "$" 123.4
             |> Expect.equal "$123.40"
       , test "works with negative numbers"
         <| \_ ->
-          formatPrice "$" -123.4
+          toPrice "$" -123.4
           |> Expect.equal "$-123.40"
       ]
     ]

@@ -12,8 +12,8 @@ addCommas s =
   |> String.reverse
 
 
-formatDecimal: Int -> Float -> String
-formatDecimal places num =
+toDecimal: Int -> Float -> String
+toDecimal places num =
   let
     m =
       10^places
@@ -31,12 +31,12 @@ formatDecimal places num =
       List.repeat (places - String.length frac) '0' |> String.fromList
   in
     if num < 0
-        then "-" ++ (formatDecimal places -num)
+        then "-" ++ (toDecimal places -num)
         else whole ++ "." ++ padding ++ frac
 
-formatPrice: String -> Float -> String
-formatPrice symbol price =
+toPrice: String -> Float -> String
+toPrice symbol price =
   price
-  |> formatDecimal 2
+  |> toDecimal 2
   |> addCommas
   |> (++) symbol
