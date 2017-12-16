@@ -36,26 +36,25 @@ suite =
         <| \_ ->
             toDecimal 2 123.456
             |> Expect.equal "123.46"
-      , test "pads positive numbers"
+      , test "rounds away from zero"
         <| \_ ->
-            toDecimal 2 123.4
-            |> Expect.equal "123.40"
-      , test "rounds only the last digit"
+            [1.01, 1.04, 1.045, 1.049, 1.05, 1.051, 1.09]
+            |> List.map (toDecimal 1)
+            |> Expect.equal ["1.0", "1.0", "1.0", "1.0", "1.1", "1.1", "1.1"]
+      , test "rounds negative numbers away from zero"
         <| \_ ->
-            toDecimal 1 1.249
-            |> Expect.equal "1.2"
-      , test "rounds negative numbers"
-        <| \_ ->
-            toDecimal 2 -123.456
-            |> Expect.equal "-123.46"
-      , test "rounds into the whole place"
+            [-1.01, -1.049, -1.05, -1.09]
+            |> List.map (toDecimal 1)
+            |> Expect.equal ["-1.0", "-1.0", "-1.1", "-1.1"]
+      , test "rounds into the integer portion"
         <| \_ ->
             toDecimal 2 123.999
             |> Expect.equal "124.00"
       , test "pads with zeros"
         <| \_ ->
-            toDecimal 2 123.0
-            |> Expect.equal "123.00"
+            [123.0, 123.4]
+            |> List.map (toDecimal 2)
+            |> Expect.equal ["123.00", "123.40"]
       , test "handles zero precision"
         <| \_ ->
             toDecimal 0 123.0
@@ -71,7 +70,7 @@ suite =
         <| \places num ->
              toDecimal places num |> String.toFloat
               |> withOk
-                (Expect.within (places |> toFloat |> (/) 0.1 |> Expect.Absolute) num)
+                (Expect.within (places |> toFloat |> (/) 0.1 |> flip (/) 2.0 |> Expect.Absolute) num)
       ]
 
     , describe "toPrice"
@@ -79,6 +78,10 @@ suite =
         <| \_ ->
             toPrice "$" 123.4
             |> Expect.equal "$123.40"
+      , test "rounds"
+        <| \_ ->
+            toPrice "$" 123.456
+            |> Expect.equal "$123.46"
       , test "works with negative numbers"
         <| \_ ->
           toPrice "$" -123.4

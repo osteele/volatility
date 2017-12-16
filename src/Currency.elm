@@ -4,7 +4,7 @@ import Char
 import Regex
 import String
 
-{-| Insert thousands separators in an number string -}
+{-| Insert thousands separators in a number string -}
 addCommas: String -> String
 addCommas s =
   s
@@ -15,6 +15,7 @@ addCommas s =
   |> String.reverse
 
 
+{- Round to prec decimals. Rounds half away from zero. -}
 toDecimal: Int -> Float -> String
 toDecimal prec num =
   let
@@ -43,52 +44,54 @@ toDecimal prec num =
         else
           mantissa ++ zs
 
+    split2: String -> String -> (String, Maybe String)
     split2 sep s =
-      case String.split sep s of
+      case String.indices sep s of
         [] ->
           (s, Nothing)
-        a :: [] ->
-          (a, Nothing)
-        a :: b :: cs ->
-          (a, Just <| String.join sep <| b :: cs)
+        ix :: _ ->
+          (String.left ix s, Just <| flip String.dropLeft s <| ix + String.length sep)
 
     -- n-length string of zeros
     zeros: Int -> String
     zeros n =
       List.repeat n '0' |> String.fromList
 
+    -- insert a decimal prec digits from the right
     insertDecimal: Int -> String -> String
     insertDecimal prec digits =
       let
-        n = String.length digits
-        whole = String.left (n - prec) digits
+        len = String.length digits
+        whole = String.left (len - prec) digits
         frac = String.right prec digits
       in
         whole ++ "." ++ frac
 
+    -- remove the first n digits, rounding half away from zero
     removeDigits: Int -> List Int -> List Int
-    removeDigits remove digits =
+    removeDigits n digits =
       let
-        round1 remove carry digits =
+        round1 n carry digits =
           case digits of
             [] ->
               if carry > 0 then [carry] else []
             d :: ds ->
-              if remove > 0 then
-                round1 (remove - 1) (if d >= 5 then 1 else 0) ds
-              else
-                let
-                  d_ = d + carry
-                in
-                  d_ % 10 :: round1 (remove - 1) (d_ // 10) ds
+              let
+                remaining carry = round1 (n - 1) carry ds
+                d_ = d + carry
+              in
+                if n > 0 then
+                  remaining <| if d >= 5 then 1 else 0
+                else
+                  d_ % 10 :: remaining (d_ // 10)
       in
-        round1 remove 0 digits
+        round1 n 0 digits
 
   in
     if num < 0 then
       "-" ++ (toDecimal prec -num)
     else
-      case split2 "." <| padded of
+      case split2 "." padded of
         (whole, Just frac) ->
           whole ++ frac
           |> String.toList
@@ -103,6 +106,7 @@ toDecimal prec num =
         (s, Nothing) ->
           s
 
+{- Display as a currency, prefixed with symbol and with two digits precision. Rounds half away from zero. -}
 toPrice: String -> Float -> String
 toPrice symbol price =
   price
