@@ -32,7 +32,6 @@ suite =
       ]
 
     , describe "toDecimal"
-      -- TODO prec = 0
       [ test "rounds positive numbers"
         <| \_ ->
             toDecimal 2 123.456
@@ -57,14 +56,18 @@ suite =
         <| \_ ->
             toDecimal 2 123.0
             |> Expect.equal "123.00"
-      , fuzz2 (Fuzz.intRange 1 4) fuzzDecimal "includes places after the decimal"
+      , test "handles zero precision"
+        <| \_ ->
+            toDecimal 0 123.0
+            |> Expect.equal "123."
+      , fuzz2 fuzzPrecision fuzzDecimal "includes the correct number of places after the decimal"
         <| \places num ->
               let
                 s = toDecimal places num
               in
                 String.split "." s |> Array.fromList |> Array.get 1 |> Maybe.map String.length
                 |> Expect.equal (Maybe.Just places)
-      , fuzz2 (Fuzz.intRange 1 4) fuzzDecimal "agrees with the whole part"
+      , fuzz2 fuzzPrecision fuzzDecimal "is correct to within precision decimals"
         <| \places num ->
              toDecimal places num |> String.toFloat
               |> withOk
@@ -84,9 +87,9 @@ suite =
     ]
 
 
-fuzzFloat: Fuzzer Float
-fuzzFloat =
-  Fuzz.map toFloat Fuzz.int
+fuzzPrecision: Fuzzer Int
+fuzzPrecision =
+  Fuzz.intRange 0 10
 
 fuzzDecimal: Fuzzer Float
 fuzzDecimal =
