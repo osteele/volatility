@@ -32,11 +32,19 @@ suite =
       ]
 
     , describe "toDecimal"
-      -- FIXME places = 0
+      -- TODO prec = 0
       [ test "rounds positive numbers"
         <| \_ ->
             toDecimal 2 123.456
             |> Expect.equal "123.46"
+      , test "pads positive numbers"
+        <| \_ ->
+            toDecimal 2 123.4
+            |> Expect.equal "123.40"
+      , test "rounds only the last digit"
+        <| \_ ->
+            toDecimal 1 1.249
+            |> Expect.equal "1.2"
       , test "rounds negative numbers"
         <| \_ ->
             toDecimal 2 -123.456
@@ -82,7 +90,7 @@ fuzzFloat =
 
 fuzzDecimal: Fuzzer Float
 fuzzDecimal =
-  Fuzz.floatRange (toFloat <| Random.minInt // 10^4)  (toFloat <| Random.maxInt // 10^4)
+  Fuzz.float
 
 withOk: (a -> Expectation) -> Result String a -> Expectation
 withOk fn result =
