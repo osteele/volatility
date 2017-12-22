@@ -5,8 +5,8 @@ import Regex
 import String
 
 {-| Insert thousands separators in a number string -}
-addCommas: String -> String
-addCommas =
+insertCommas: String -> String
+insertCommas =
   String.reverse
   >> Regex.find Regex.All (Regex.regex "(\\d*\\.)?\\d{0,3}-?")
   >> List.map .match
@@ -109,5 +109,5 @@ toDecimal prec num =
 toPrice: String -> Float -> String
 toPrice symbol =
   toDecimal 2
-  >> addCommas
+  >> insertCommas
   >> (++) symbol

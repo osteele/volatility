@@ -11,33 +11,33 @@ import Currency exposing (..)
 suite : Test
 suite =
   describe "currency functions"
-    [ describe "addCommas"
+    [ describe "insertCommas"
       [ test "inserts commas"
           <| \_ ->
-            addCommas "1234"
+            insertCommas "1234"
             |> Expect.equal "1,234"
       , test "inserts multiple commas"
           <| \_ ->
-            addCommas "1234567"
+            insertCommas "1234567"
             |> Expect.equal "1,234,567"
-      , test "does nothing to short strings"
+      , test "preserves short strings"
           <| \_ ->
-            addCommas "123"
+            insertCommas "123"
             |> Expect.equal "123"
-      , test "preserves decimals"
+      , test "preserves decimals in short strings"
           <| \_ ->
-            addCommas "123.45"
+            insertCommas "123.45"
             |> Expect.equal "123.45"
-      , test "preserves decimals (2)"
+      , test "preserves decimals in longer strings"
           <| \_ ->
-            addCommas "1234.56"
+            insertCommas "1234.56"
             |> Expect.equal "1,234.56"
-      , fuzz int "is equivalent to toString once commas are stripped"
+      , fuzz int "is equivalent to toString, once commas are stripped"
         <| \num ->
           let
             s = toString num
           in
-            Expect.equal (String.Extra.replace "," "" <| addCommas s) s
+            Expect.equal (String.Extra.replace "," "" <| insertCommas s) s
       ]
 
     , describe "toDecimal"
