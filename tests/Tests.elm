@@ -1,7 +1,6 @@
 module Tests exposing (..)
 
 import Array
-import Random
 import String.Extra
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
@@ -14,15 +13,25 @@ suite =
   describe "currency functions"
     [ describe "addCommas"
       [ test "inserts commas"
-        <| \() -> Expect.equal (addCommas "1234") "1,234"
+          <| \_ ->
+            addCommas "1234"
+            |> Expect.equal "1,234"
       , test "inserts multiple commas"
-        <| \() -> Expect.equal (addCommas "1234567") "1,234,567"
+          <| \_ ->
+            addCommas "1234567"
+            |> Expect.equal "1,234,567"
       , test "does nothing to short strings"
-        <| \() -> Expect.equal (addCommas "123") "123"
+          <| \_ ->
+            addCommas "123"
+            |> Expect.equal "123"
       , test "preserves decimals"
-        <| \() -> Expect.equal (addCommas "123.45") "123.45"
+          <| \_ ->
+            addCommas "123.45"
+            |> Expect.equal "123.45"
       , test "preserves decimals (2)"
-        <| \() -> Expect.equal (addCommas "1234.56") "1,234.56"
+          <| \_ ->
+            addCommas "1234.56"
+            |> Expect.equal "1,234.56"
       , fuzz int "is equivalent to toString once commas are stripped"
         <| \num ->
           let
@@ -60,17 +69,18 @@ suite =
             toDecimal 0 123.0
             |> Expect.equal "123."
       , fuzz2 fuzzPrecision fuzzDecimal "includes the correct number of places after the decimal"
-        <| \places num ->
-              let
-                s = toDecimal places num
-              in
-                String.split "." s |> Array.fromList |> Array.get 1 |> Maybe.map String.length
-                |> Expect.equal (Maybe.Just places)
+        <| \prec num ->
+            toDecimal prec num
+            |> String.split "."
+            |> Array.fromList
+            |> Array.get 1
+            |> Maybe.map String.length
+            |> Expect.equal (Maybe.Just prec)
       , fuzz2 fuzzPrecision fuzzDecimal "is correct to within precision decimals"
-        <| \places num ->
-             toDecimal places num |> String.toFloat
+        <| \prec num ->
+            toDecimal prec num |> String.toFloat
               |> withOk
-                (Expect.within (places |> toFloat |> (/) 0.1 |> flip (/) 2.0 |> Expect.Absolute) num)
+                (Expect.within (prec |> toFloat |> (/) 0.1 |> flip (/) 2.0 |> Expect.Absolute) num)
       ]
 
     , describe "toPrice"
@@ -82,6 +92,10 @@ suite =
         <| \_ ->
             toPrice "$" 123.456
             |> Expect.equal "$123.46"
+      , test "adds commas"
+        <| \_ ->
+            toPrice "$" 1234.5
+            |> Expect.equal "$1,234.50"
       , test "works with negative numbers"
         <| \_ ->
           toPrice "$" -123.4

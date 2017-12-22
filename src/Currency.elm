@@ -6,13 +6,12 @@ import String
 
 {-| Insert thousands separators in a number string -}
 addCommas: String -> String
-addCommas s =
-  s
-  |> String.reverse
-  |> Regex.find Regex.All (Regex.regex "(\\d*\\.)?\\d{0,3}-?")
-  |> List.map .match
-  |> String.join ","
-  |> String.reverse
+addCommas =
+  String.reverse
+  >> Regex.find Regex.All (Regex.regex "(\\d*\\.)?\\d{0,3}-?")
+  >> List.map .match
+  >> String.join ","
+  >> String.reverse
 
 
 {- Round to prec decimals. Rounds half away from zero. -}
@@ -108,8 +107,7 @@ toDecimal prec num =
 
 {- Display as a currency, prefixed with symbol and with two digits precision. Rounds half away from zero. -}
 toPrice: String -> Float -> String
-toPrice symbol price =
-  price
-  |> toDecimal 2
-  |> addCommas
-  |> (++) symbol
+toPrice symbol =
+  toDecimal 2
+  >> addCommas
+  >> (++) symbol
