@@ -82,9 +82,12 @@ suite =
             |> Expect.equal (Maybe.Just prec)
       , fuzz2 fuzzPrecision fuzzDecimal "is correct to within precision decimals"
         <| \prec num ->
-            toDecimal prec num |> String.toFloat
-              |> withOk
-                (Expect.within (prec |> toFloat |> (/) 0.1 |> flip (/) 2.0 |> Expect.Absolute) num)
+            let
+              tolerance = 0.5 / (10 ^ toFloat prec)
+            in
+              toDecimal prec num
+              |> String.toFloat
+              |> withOk (Expect.within (Expect.Absolute tolerance) num)
       ]
 
     , describe "toPrice"
