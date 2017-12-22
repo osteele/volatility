@@ -68,6 +68,10 @@ suite =
         <| \_ ->
             toDecimal 0 123.0
             |> Expect.equal "123."
+      , test "works on integers"
+        <| \_ ->
+            toDecimal 2 123
+            |> Expect.equal "123.00"
       , fuzz2 fuzzPrecision fuzzDecimal "includes the correct number of places after the decimal"
         <| \prec num ->
             toDecimal prec num
