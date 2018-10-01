@@ -1,6 +1,12 @@
-# Coindie
+# Volatility
 
-Coindie (coin+die) is a single-page web app that displays the current value of Bitcoin alongside the face of a six-sided die.
+![](./docs/screenshot.png)
+
+Volatility is a single-page web application, that displays the current value of
+Bitcoin alongside the face of a six-sided die.
+
+This was my “learn [Elm](http://elm-lang.org)” project, developed during the
+height of the [Bitcoin craze](https://en.wikipedia.org/wiki/Bitcoin#2017–2018).
 
 ## Develop
 
